@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 -- The name of the package.
-name:                bxtrader
+name:                campbx
 
 -- The package version.  See the Haskell package versioning policy (PVP) 
 -- for standards guiding when and how versions should be incremented.
@@ -10,13 +10,13 @@ name:                bxtrader
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.1.0
+version:             0.1.0.0
 
 -- A short (one-line) description of the package.
 synopsis:            CampBX API Library
 
 -- A longer description of the package.
--- description:         
+description:         An API Library to Query the CampBX Bitcoin Market.
 
 -- The license under which the package is released.
 license:             GPL-3
@@ -48,19 +48,28 @@ cabal-version:       >=1.10
 
 library
   -- Modules exported by the library.
-  -- exposed-modules:     
+  exposed-modules:     CampBX
   
   -- Modules included in this library but not exported.
-  -- other-modules:       
+  other-modules:       CampBX.Client,
+                       CampBX.Types
   
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:    
-  
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.7 && <4.8
+  build-depends:       base >=4.7 && <4.8,
+                       http-conduit,
+                       aeson,
+                       lens,
+                       containers,
+                       bytestring,
+                       transformers,
+                       resourcet,
+                       unordered-containers
+
   
   -- Directories containing source files.
-  -- hs-source-dirs:      
+  hs-source-dirs:      src
   
   -- Base language which the package is written in.
   default-language:    Haskell2010
