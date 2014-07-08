@@ -62,12 +62,34 @@ data Wallet    = Wallet    { totalUSD  :: USDAmount
                            , marginUSD :: USDAmount
                            , marginBTC :: BTCAmount } deriving (Show, Generic)
 
-data OrderList = OrderList { buys      :: [Order]
-                           , sells     :: [Order] } deriving (Show, Generic)
+-- | A List of the User's Pending Buy and Sell Orders
+data OrderList a = OrderList { buys    :: [Order]
+                             , sells   :: [Order] }
+                             deriving (Show, Generic)
+
+data DepositAddress = DepositAddress { btcAddress :: String
+                                     , expireDate :: Integer } deriving (Show, Generic)
 
 
+-- JSON Parsing Instances
 instance FromJSON Bid
 instance FromJSON Ask
+instance FromJSON OrderType
+instance FromJSON PriceType
+instance FromJSON FillType
+instance FromJSON Margin
+instance FromJSON DarkPool
+instance FromJSON Order
+instance FromJSON (APIStatus String)
+
+instance FromJSON Ticker where
+        parseJSON (Object v) = do
+            bid   <- fRead $ v .: "Best Bid"
+            ask   <- fRead $ v .: "Best Ask"
+            trade <- fRead $ v .: "Last Trade"
+            return $ Ticker ask bid trade
+            where fRead = fmap read
+        parseJSON _          = fail "Did not receive Ticker JSON object."
 
 instance FromJSON Depth where
         parseJSON (Object v) =
@@ -79,23 +101,37 @@ instance FromJSON Depth where
                _ -> fail "Could not parse Depth Asks"
         parseJSON _          = fail "Did not receive Depth JSON object."
 
-instance FromJSON Ticker where
+instance FromJSON Wallet where
         parseJSON (Object v) = do
-            bid   <- fmap read $ v .: "Best Bid"
-            ask   <- fmap read $ v .: "Best Ask"
-            trade <- fmap read $ v .: "Last Trade"
-            return $ Ticker ask bid trade
-        parseJSON _          = fail "Did not receive Ticker JSON object."
+            totalUsd  <- fRead $ v .: "Total USD"
+            totalBtc  <- fRead $ v .: "Total BTC"
+            liquidUsd <- fRead $ v .: "Liquid USD"
+            liquidBtc <- fRead $ v .: "Liquid BTC"
+            marginUsd <- fRead $ v .: "Margin Account USD"
+            marginBtc <- fRead $ v .: "Margin Account BTC"
+            return $ Wallet totalUsd totalBtc liquidUsd liquidBtc marginUsd marginBtc
+            where fRead = fmap read
+        parseJSON _          = fail "Did not receive Wallet JSON object."
 
-instance FromJSON Wallet
-instance FromJSON OrderType
-instance FromJSON PriceType
-instance FromJSON FillType
-instance FromJSON Margin
-instance FromJSON DarkPool
-instance FromJSON Order
-instance FromJSON OrderList
+instance FromJSON DepositAddress where
+        parseJSON (Object v) = do
+            address <- v .: "Success"
+            expires <- v .: "Expiry"
+            return $ DepositAddress address expires
+        parseJSON _          = fail "Did not receive BTC Deposit Address JSON object."
 
+-- TODO: For pendingOrders
+--instance FromJSON (OrderList) where
+--        parseJSON (Object v) =
+--            OrderList <$> buyList <*> sellList
+--            where buyList    =
+--                    case HM.lookup "Buy" v of
+--                      (Just (Array as)) -> case HM.lookup "Info" as of
+--                                      (Just bs) -> Left $ Info bs
+--                  sellList   =
+--                    case HM.lookup "Buy" v of
+--                      (Just (Array as)) -> case HM.lookup "Info" as of
+--                                      (Just bs) -> Left $ Info bs
 
 
 
@@ -111,7 +147,6 @@ data EndPoint  = GetDepth
                | GetOrders
                | GetMargins
                | GetBTCAddr
-               | SendInstant
                | SendBTC
                | TradeCancel
                | TradeEnter
@@ -122,4 +157,4 @@ data EndPoint  = GetDepth
 type BXDispatch = (EndPoint -> IO L.ByteString)
 
 -- | API Response Statuses
-data APIStatus = Success String | Info String | Error String deriving (Show)
+data APIStatus a = Success a | Info a | Error a deriving (Show, Generic)

@@ -20,7 +20,8 @@ getAuthResponseBody :: Manager -> Auth -> EndPoint -> IO L.ByteString
 getAuthResponseBody manager auth ep  = runResourceT $ do
         reqBX         <- liftIO $ makeBXReq ep
         let reqBXAuth = uncurry applyBasicAuth auth reqBX { method = "POST" }
-        res           <- httpLbs reqBXAuth manager
+        let reqAuth   = urlEncodedBody [("user", fst auth), ("pass", snd auth)] reqBXAuth
+        res           <- httpLbs reqAuth manager
         return $ responseBody res
 
 -- | Create a Secure Request w/ an Appropriate Timeout for CampBX to the
@@ -41,7 +42,6 @@ makeURL e    = "https://campbx.com/api/" ++ endpoint e ++ ".php"
               endpoint GetOrders     = "myorders"
               endpoint GetMargins    = "mymargins"
               endpoint GetBTCAddr    = "getbtcaddr"
-              endpoint SendInstant   = "sendinstant"
               endpoint SendBTC       = "sendbtc"
               endpoint TradeCancel   = "tradecancel"
               endpoint TradeEnter    = "tradeenter"
