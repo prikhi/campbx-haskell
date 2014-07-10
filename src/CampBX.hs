@@ -1,52 +1,48 @@
 {-# LANGUAGE OverloadedStrings #-}
 module CampBX
-        ( getAuth
+        ( runCampBX
+        , defaultCampBXConfig
         , getDepth
         , getTicker
         , getWallet
---        , getPendingOrders
         , getDepositAddress
-        , getResponseBody
-        , getAuthResponseBody ) where
+        , getPendingOrders
+        , sendBTC
+        , Ticker(..)
+        , Depth(..)
+        , Wallet(..)
+        , DepositAddress(..)
+        , OrderList(..)
+        ) where
 
-import Control.Applicative ((<$>), (<*>))
-import Data.Aeson (eitherDecode)
 import qualified Data.ByteString.Char8 as BC
 
 import CampBX.Client
 import CampBX.Types
 
--- | Get Authorization Details from StdIn
-getAuth :: IO Auth
-getAuth            = makeAuth <$> putStrGetBS "Username: " <*> putStrGetBS "Password: "
-        where putStrGetBS s = putStr s >> BC.getLine
 
 -- | Get all the Offers from the Depth List
-getDepth :: BXDispatch -> IO (Either String Depth)
-getDepth f         = do
-        r <- f GetDepth
-        return $ eitherDecode r
+getDepth :: CampBX (Either String Depth)
+getDepth = queryEndPoint GetDepth []
 
 -- | Get the Current Market Ticker
-getTicker :: BXDispatch -> IO (Either String Ticker)
-getTicker f        = do
-        r <- f GetTicker
-        return $ eitherDecode r
+getTicker :: CampBX (Either String Ticker)
+getTicker = queryEndPoint GetTicker []
 
-getWallet :: BXDispatch -> IO (Either String Wallet)
-getWallet f = do
-        r <- f GetFunds
-        return $ eitherDecode r
+-- | Get the User's Total, Lquid and Marginal Funds
+getWallet :: CampBX (Either String Wallet)
+getWallet = queryEndPoint GetFunds []
+
+-- | Get a Bitcoin Address for Depositing Funds into the User's CampBX
+-- Account
+getDepositAddress :: CampBX (Either String DepositAddress)
+getDepositAddress = queryEndPoint GetBTCAddr []
 
 -- | Get Pending/Placed Orders
---getPendingOrders :: BXDispatch -> IO (Either String OrderList)
---getPendingOrders f = do
---        r <- f GetOrders
---        print r
---        return $ eitherDecode r
+getPendingOrders :: CampBX (Either String OrderList)
+getPendingOrders = queryEndPoint GetOrders []
 
--- | Get a Bitcoin Address to Make CampBX Deposits To
-getDepositAddress :: BXDispatch -> IO (Either String DepositAddress)
-getDepositAddress f = do
-        r <- f GetBTCAddr
-        return $ eitherDecode r
+-- | Sends Bitcoins from the User's Account to an Address
+sendBTC :: BTCAddress -> BTCAmount -> CampBX (Either String Integer)
+sendBTC address amount = queryEndPoint SendBTC [("BTCTo", BC.pack address),
+                                                ("BTCAmt", BC.pack $ show amount)]
