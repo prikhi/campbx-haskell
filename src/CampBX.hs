@@ -9,6 +9,7 @@ module CampBX
         , getPendingOrders
         , sendBTC
         , placeQuickBuy
+        , placeBuy
         , placeQuickSell
         , cancelBuyOrder
         , cancelSellOrder
@@ -48,33 +49,51 @@ getPendingOrders = queryEndPoint GetOrders []
 
 -- | Sends Bitcoins from the User's Account to an Address
 sendBTC :: BTCAddress -> BTCAmount -> CampBX (Either String Integer)
-sendBTC address quantity = queryEndPoint SendBTC [("BTCTo", BC.pack address),
-                                                  ("BTCAmt", BC.pack $ show quantity)]
+sendBTC address quantity = queryEndPoint SendBTC
+                                    [ ("BTCTo", BC.pack address)
+                                    , ("BTCAmt", BC.pack $ show quantity)
+                                    ]
 
 -- | Place a Limit Order to Buy a Quantity of BTC at or Below a Given Price
 placeQuickBuy :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
 placeQuickBuy quantity price = queryEndPoint TradeEnter
-                               [ ("TradeMode", "QuickBuy")
-                               , ("Quantity", BC.pack $ show quantity)
-                               , ("Price", BC.pack $ show price)
-                               ]
+                                    [ ("TradeMode", "QuickBuy")
+                                    , ("Quantity",  BC.pack $ show quantity)
+                                    , ("Price",     BC.pack $ show price)
+                                    ]
+
+-- | Place an Advanced Buy Order With an Optional FillType, Dark Pool and
+-- Expiration
+placeBuy :: BTCAmount -> BTCPrice -> Maybe FillType -> Maybe DarkPool ->
+            Maybe String -> CampBX (Either String (APIStatus Int))
+placeBuy q p Nothing dp e  = placeBuy q p (Just Incremental) dp e
+placeBuy q p ft Nothing e  = placeBuy q p ft (Just No) e
+placeBuy q p ft dp Nothing = placeBuy q p ft dp (Just "")
+placeBuy q p (Just ft) (Just dp) (Just e) = queryEndPoint TradeAdvanced
+                                    [ ("TradeMode", "AdvancedBuy")
+                                    , ("Quantity",  BC.pack $ show q)
+                                    , ("Price",     BC.pack $ show p)
+                                    , ("FillType",  BC.pack $ show ft)
+                                    , ("DarkPool",  BC.pack $ show dp)
+                                    , ("Expiry",    BC.pack e)
+                                    ]
 
 -- | Place a Limit Order to Sell a Quantity of BTC at or Above a Given Price
 placeQuickSell :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
 placeQuickSell quantity price = queryEndPoint TradeEnter
-                                [ ("TradeMode", "QuickSell")
-                                , ("Quantity", BC.pack $ show quantity)
-                                , ("Price", BC.pack $ show price)
-                                ]
+                                    [ ("TradeMode", "QuickSell")
+                                    , ("Quantity", BC.pack $ show quantity)
+                                    , ("Price", BC.pack $ show price)
+                                    ]
 
 -- | Cancel the Buy Order with the Given Order ID
 cancelBuyOrder :: Int -> CampBX (Either String (APIStatus Int))
 cancelBuyOrder orderID = queryEndPoint TradeCancel
-                         [ ("Type", "Buy")
-                         , ("OrderID", BC.pack $ show orderID) ]
+                                    [ ("Type", "Buy")
+                                    , ("OrderID", BC.pack $ show orderID) ]
 
 -- | Cancel the Sell Order with the Given Order ID
 cancelSellOrder :: Int -> CampBX (Either String (APIStatus Int))
 cancelSellOrder orderID = queryEndPoint TradeCancel
-                         [ ("Type", "Sell")
-                         , ("OrderID", BC.pack $ show orderID) ]
+                                    [ ("Type", "Sell")
+                                    , ("OrderID", BC.pack $ show orderID) ]

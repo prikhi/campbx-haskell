@@ -48,7 +48,7 @@ data OrderType  = Sell | QuickSell | Short | Buy | QuickBuy | Cover
                 deriving (Show, Generic)
 data PriceType  = Market | Limit | StopLimit
                 deriving (Show, Generic)
-data FillType   = Incr | FOK | AON
+data FillType   = Incremental | FOK | AON
                 deriving (Show, Generic)
 data Margin     = Int | None
                 deriving (Show, Generic)
