@@ -97,6 +97,7 @@ instance FromJSON Margin
 instance FromJSON DarkPool
 instance FromJSON Order
 instance FromJSON (APIStatus String)
+instance FromJSON (APIStatus Int)
 
 instance FromJSON Ticker where
         parseJSON (Object v) = do
@@ -105,7 +106,7 @@ instance FromJSON Ticker where
             trade <- fRead $ v .: "Last Trade"
             return $ Ticker ask bid trade
             where fRead = fmap read
-        parseJSON _          = fail "Did not receive Ticker JSON object."
+        parseJSON _          = fail "Did not receive a valid Ticker JSON object."
 
 instance FromJSON Depth where
         parseJSON (Object v) =
@@ -115,7 +116,7 @@ instance FromJSON Depth where
                                                   <*> parseJSON bs
                                _         -> fail "Could not parse Depth Bids"
                _ -> fail "Could not parse Depth Asks"
-        parseJSON _          = fail "Did not receive Depth JSON object."
+        parseJSON _          = fail "Did not receive a valid Depth JSON object."
 
 instance FromJSON Wallet where
         parseJSON (Object v) = do
@@ -127,20 +128,20 @@ instance FromJSON Wallet where
             marginBtc <- fRead $ v .: "Margin Account BTC"
             return $ Wallet totalUsd totalBtc liquidUsd liquidBtc marginUsd marginBtc
             where fRead = fmap read
-        parseJSON _          = fail "Did not receive Wallet JSON object."
+        parseJSON _          = fail "Did not receive a valid Wallet JSON object."
 
 instance FromJSON DepositAddress where
         parseJSON (Object v) = do
             address <- v .: "Success"
             expires <- v .: "Expiry"
             return $ DepositAddress address expires
-        parseJSON _          = fail "Did not receive BTC Deposit Address JSON object."
+        parseJSON _          = fail "Did not receive a valid BTC Deposit Address JSON object."
 
 instance FromJSON TransferResponse where
         parseJSON (Object v) = do
             txId <- v .: "Success"
             return $ TransferResponse txId
-        parseJSON _          = fail "Unsuccessful request."
+        parseJSON _          = fail "Attempt to send BTC failed."
 
 instance FromJSON OrderList where
         parseJSON (Object v) =
@@ -150,11 +151,13 @@ instance FromJSON OrderList where
                                      Just _  -> return []
                                      Nothing -> parseJSON (Array a)
                                      where Object arrayObj = head $ V.toList a
-                      _              -> fail "Could not parse Pending Orders JSON Object."
+                      _              -> fail $ "Could not parse the Buy List in "
+                                        ++     "the Pending Orders JSON Object."
                   sellList   = case HM.lookup "Buy" v of
                       Just (Array a) -> case HM.lookup "Info" arrayObj of
                                      Just _  -> return []
                                      Nothing -> parseJSON (Array a)
                                      where Object arrayObj = head $ V.toList a
-                      _              -> fail "Could not parse Pending Orders JSON Object."
+                      _              -> fail $ "Could not parse the Sell List in "
+                                        ++     "the Pending Orders JSON Object."
         parseJSON _          = fail "Did not receive a proper Pending Orders JSON Object."

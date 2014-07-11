@@ -8,6 +8,10 @@ module CampBX
         , getDepositAddress
         , getPendingOrders
         , sendBTC
+        , placeQuickBuy
+        , placeQuickSell
+        , cancelBuyOrder
+        , cancelSellOrder
         , Ticker(..)
         , Depth(..)
         , Wallet(..)
@@ -44,5 +48,33 @@ getPendingOrders = queryEndPoint GetOrders []
 
 -- | Sends Bitcoins from the User's Account to an Address
 sendBTC :: BTCAddress -> BTCAmount -> CampBX (Either String Integer)
-sendBTC address amount = queryEndPoint SendBTC [("BTCTo", BC.pack address),
-                                                ("BTCAmt", BC.pack $ show amount)]
+sendBTC address quantity = queryEndPoint SendBTC [("BTCTo", BC.pack address),
+                                                  ("BTCAmt", BC.pack $ show quantity)]
+
+-- | Place a Limit Order to Buy a Quantity of BTC at or Below a Given Price
+placeQuickBuy :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
+placeQuickBuy quantity price = queryEndPoint TradeEnter
+                               [ ("TradeMode", "QuickBuy")
+                               , ("Quantity", BC.pack $ show quantity)
+                               , ("Price", BC.pack $ show price)
+                               ]
+
+-- | Place a Limit Order to Sell a Quantity of BTC at or Above a Given Price
+placeQuickSell :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
+placeQuickSell quantity price = queryEndPoint TradeEnter
+                                [ ("TradeMode", "QuickSell")
+                                , ("Quantity", BC.pack $ show quantity)
+                                , ("Price", BC.pack $ show price)
+                                ]
+
+-- | Cancel the Buy Order with the Given Order ID
+cancelBuyOrder :: Int -> CampBX (Either String (APIStatus Int))
+cancelBuyOrder orderID = queryEndPoint TradeCancel
+                         [ ("Type", "Buy")
+                         , ("OrderID", BC.pack $ show orderID) ]
+
+-- | Cancel the Sell Order with the Given Order ID
+cancelSellOrder :: Int -> CampBX (Either String (APIStatus Int))
+cancelSellOrder orderID = queryEndPoint TradeCancel
+                         [ ("Type", "Sell")
+                         , ("OrderID", BC.pack $ show orderID) ]
