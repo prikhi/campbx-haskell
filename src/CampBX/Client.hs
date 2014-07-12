@@ -2,6 +2,7 @@
 module CampBX.Client
         ( CampBX
         , runCampBX
+        , CampBXConfig(..)
         , defaultCampBXConfig
         , queryEndPoint
         ) where
@@ -18,18 +19,26 @@ import Network.HTTP.Conduit
 
 import CampBX.Types
 
+-- | The CampBX Monad Holds the Configuration State and Allows Network and
+-- Logging Actions
 type CampBX a = LoggingT (StateT CampBXConfig (ResourceT IO)) a
 
+-- | Run the CampBX Action
 runCampBX :: MonadIO m => CampBXConfig -> CampBX a -> m a
 runCampBX config action = liftIO . runResourceT . fmap fst .
                           flip runStateT config . runStderrLoggingT $ action
 
 -- | Represents the Current CampBX Configuration State
-data CampBXConfig = CampBXConfig { bxUser    :: B.ByteString -- The User's Name
-                                 , bxPass    :: B.ByteString -- The User's Password
-                                 , bxUrl     :: String  -- The Desired API URL
-                                 , bxManager :: Manager -- The Connection Manager
-                                 , lastReq   :: Int -- The POSIX Time of the Last Request in Milliseconds
+data CampBXConfig = CampBXConfig { -- | The User to Login As
+                                   bxUser    :: B.ByteString
+                                   -- | The User's Password
+                                 , bxPass    :: B.ByteString
+                                   -- | The Desired API URL
+                                 , bxUrl     :: String
+                                   -- | The Connection Manager for All Requests
+                                 , bxManager :: Manager
+                                   -- | The POSIX Time of the Last Request in Milliseconds
+                                 , lastReq   :: Int
                                  }
 
 -- | Creates a CampBXConfig with a new Manager
@@ -43,8 +52,8 @@ defaultCampBXConfig = do
                             , lastReq   = 0 }
 
 
--- | Query an EndPoint, waiting at least 500 Milliseconds from the previous
--- request
+-- | Queries an API EndPoint, waiting at least 500 Milliseconds from the
+-- previous request
 queryEndPoint :: (FromJSON a) => EndPoint -> [(B.ByteString, B.ByteString)] ->
                                  CampBX (Either String a)
 queryEndPoint ep postData = do
@@ -63,7 +72,7 @@ queryEndPoint ep postData = do
         return $ eitherDecode $ responseBody response
         where getMilliseconds = liftIO $ (round . (* 1000)) <$> getPOSIXTime
 
--- | Build the URL for an EndPoint
+-- | Builds the URL for the EndPoint
 makeURL :: String -> EndPoint -> String
 makeURL url e         = url ++ endpoint e ++ ".php"
         where endpoint GetDepth      = "xdepth"

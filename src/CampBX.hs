@@ -1,9 +1,38 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+Module          : CampBX
+Description     : An API Library for the CampBX Bitcoin Market
+Copyright       : (c) Pavan Rikhi, 2014
+License         : GPL-3
+Maintainer      : pavan@sleepanarchy.com
+Stability       : experimental
+Portability     : POSIX
+
+CampBX is a library for interacting with the API for CampBX, a Bitcoing
+Trading Market.
+
+Actions are run in the 'CampBX' Monad, which should be supplied with
+a 'CampBXConfig'. You will need to override the 'bxUser' and 'bxPass'
+Config fields to use the 'Authorized Endpoints' functions.
+
+The following actions are currently supported:
+
+* Querying the Market Depth, Ticker and Account Balances
+* Depositing & Withdrawing Funds from the CampBX Account
+* Placing Quick & Advanced Buy/Sell Orders
+
+-}
 module CampBX
-        ( runCampBX
+        (
+        -- * CampBX Monad
+          runCampBX
+        , CampBXConfig(..)
         , defaultCampBXConfig
+        -- * CampBX API Functions
+        -- ** Anonymous Endpoints
         , getDepth
         , getTicker
+        -- ** Authorized Endpoints
         , getWallet
         , getDepositAddress
         , getPendingOrders
@@ -13,6 +42,7 @@ module CampBX
         , placeQuickSell
         , cancelBuyOrder
         , cancelSellOrder
+          -- * Types
         , Ticker(..)
         , Depth(..)
         , Wallet(..)
@@ -26,35 +56,35 @@ import CampBX.Client
 import CampBX.Types
 
 
--- | Get all the Offers from the Depth List
+-- | Retrieves all the Buy & Sell Offers on the Market
 getDepth :: CampBX (Either String Depth)
 getDepth = queryEndPoint GetDepth []
 
--- | Get the Current Market Ticker
+-- | Retrieves the Current Market Ticker
 getTicker :: CampBX (Either String Ticker)
 getTicker = queryEndPoint GetTicker []
 
--- | Get the User's Total, Lquid and Marginal Funds
+-- | Retrieves the User's Total, Liquid and Margin Account Funds
 getWallet :: CampBX (Either String Wallet)
 getWallet = queryEndPoint GetFunds []
 
--- | Get a Bitcoin Address for Depositing Funds into the User's CampBX
+-- | Retrieves a Bitcoin Address for Depositing Funds into the CampBX
 -- Account
 getDepositAddress :: CampBX (Either String DepositAddress)
 getDepositAddress = queryEndPoint GetBTCAddr []
 
--- | Get Pending/Placed Orders
+-- | Retrieves the Account's Open Orders
 getPendingOrders :: CampBX (Either String OrderList)
 getPendingOrders = queryEndPoint GetOrders []
 
--- | Sends Bitcoins from the User's Account to an Address
+-- | Sends Bitcoins from the CampBX Account to the Specified Address
 sendBTC :: BTCAddress -> BTCAmount -> CampBX (Either String Integer)
 sendBTC address quantity = queryEndPoint SendBTC
                                     [ ("BTCTo", BC.pack address)
                                     , ("BTCAmt", BC.pack $ show quantity)
                                     ]
 
--- | Place a Limit Order to Buy a Quantity of BTC at or Below a Given Price
+-- | Places a Limit Order to Buy a Quantity of BTC at or Below a Given Price
 placeQuickBuy :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
 placeQuickBuy quantity price = queryEndPoint TradeEnter
                                     [ ("TradeMode", "QuickBuy")
@@ -62,7 +92,7 @@ placeQuickBuy quantity price = queryEndPoint TradeEnter
                                     , ("Price",     BC.pack $ show price)
                                     ]
 
--- | Place an Advanced Buy Order With an Optional FillType, Dark Pool and
+-- | Places an Advanced Buy Order With an Optional FillType, Dark Pool and
 -- Expiration
 placeBuy :: BTCAmount -> BTCPrice -> Maybe FillType -> Maybe DarkPool ->
             Maybe String -> CampBX (Either String (APIStatus Int))
@@ -78,7 +108,7 @@ placeBuy q p (Just ft) (Just dp) (Just e) = queryEndPoint TradeAdvanced
                                     , ("Expiry",    BC.pack e)
                                     ]
 
--- | Place a Limit Order to Sell a Quantity of BTC at or Above a Given Price
+-- | Places a Limit Order to Sell a Quantity of BTC at or Above a Given Price
 placeQuickSell :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
 placeQuickSell quantity price = queryEndPoint TradeEnter
                                     [ ("TradeMode", "QuickSell")
@@ -86,13 +116,13 @@ placeQuickSell quantity price = queryEndPoint TradeEnter
                                     , ("Price", BC.pack $ show price)
                                     ]
 
--- | Cancel the Buy Order with the Given Order ID
+-- | Cancels the Buy Order with the Given Order ID
 cancelBuyOrder :: Int -> CampBX (Either String (APIStatus Int))
 cancelBuyOrder orderID = queryEndPoint TradeCancel
                                     [ ("Type", "Buy")
                                     , ("OrderID", BC.pack $ show orderID) ]
 
--- | Cancel the Sell Order with the Given Order ID
+-- | Cancels the Sell Order with the Given Order ID
 cancelSellOrder :: Int -> CampBX (Either String (APIStatus Int))
 cancelSellOrder orderID = queryEndPoint TradeCancel
                                     [ ("Type", "Sell")

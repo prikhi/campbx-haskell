@@ -34,7 +34,7 @@ type BTCAddress = String
 type BTCAmount  = Double
 -- | A Quantity of USD
 type USDAmount  = Double
--- | The Price in USD of 1 Bitcoin
+-- | The Price of a Single Bitcoin in USD
 type BTCPrice   = Double
 
 -- | The Price and Quantity of a BTC Buy Offer
@@ -60,29 +60,49 @@ data Order      = Order OrderType PriceType FillType Margin DarkPool
 
 
 
--- | The List of Current Asks and Bids
+-- | The List of Current Asks and Bids on the Market
 data Depth      = Depth     { asks :: [Ask] , bids :: [Bid] } deriving (Show, Generic)
 
--- | The Lowest Ask and Highest Bid
-data Ticker     = Ticker    { bestAsk   :: BTCAmount
-                            , bestBid   :: BTCAmount
-                            , lastTrade :: BTCAmount } deriving (Show, Generic)
+-- | The Lowest Ask and Highest Bid Currently on the Market and the Price
+-- of the Last Trade
+data Ticker     = Ticker    { -- | The Lowest Sell Offer on the Market
+                              bestAsk   :: BTCPrice
+                              -- | The Highest Buy Offer on the Market
+                            , bestBid   :: BTCPrice
+                              -- | The Price in USD per BTC of the Last
+                              -- Trade
+                            , lastTrade :: BTCPrice } deriving (Show, Generic)
 
 -- | A User's Wallet Contains Liquid and Marginal USD/BTC
-data Wallet     = Wallet    { totalUSD  :: USDAmount
+data Wallet     = Wallet    { -- | The Account's Total USD
+                              totalUSD  :: USDAmount
+                              -- | The Account's Total BTC
                             , totalBTC  :: BTCAmount
+                              -- | USD Available for New Orders
                             , liquidUSD :: USDAmount
+                              -- | BTC Available for New Orders
                             , liquidBTC :: BTCAmount
+                              -- | Margin Account's USD Balance
                             , marginUSD :: USDAmount
+                              -- | Margin Account's BTC Balance
                             , marginBTC :: BTCAmount } deriving (Show, Generic)
 
 -- | A List of the User's Pending Buy and Sell Orders
-data OrderList  = OrderList { buys    :: [Order]
+data OrderList  = OrderList { -- | The Account's Open Buy Orders
+                              buys    :: [Order]
+                              -- | The Account's Open Sell Orders
                             , sells   :: [Order] }
                             deriving (Show, Generic)
 
-data DepositAddress   = DepositAddress { btcAddress :: String
-                                       , expireDate :: Integer } deriving (Show, Generic)
+-- TODO: Figure out how to convert the expireDate's Integer to a Date...
+-- | An Address to Deposit BTC into the CampBX Account
+data DepositAddress   = DepositAddress
+                            { -- | The Single-Use Bitcoin Wallet Address
+                              -- for Adding BTC to the Account
+                              btcAddress :: String
+                              -- | The Expiration Date of the Deposit
+                              -- Address
+                            , expireDate :: Integer } deriving (Show, Generic)
 
 data TransferResponse = TransferResponse { transaction :: Integer } deriving (Show, Generic)
 
