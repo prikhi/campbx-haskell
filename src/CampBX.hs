@@ -13,7 +13,7 @@ Trading Market.
 
 Actions are run in the 'CampBX' Monad, which should be supplied with
 a 'CampBXConfig'. You will need to override the 'bxUser' and 'bxPass'
-Config fields to use the 'Authorized Endpoints' functions.
+Config fields to use the 'Authorized Endpoints'.
 
 The following actions are currently supported:
 
@@ -40,14 +40,21 @@ module CampBX
         , placeQuickBuy
         , placeBuy
         , placeQuickSell
+        , placeSell
         , cancelBuyOrder
         , cancelSellOrder
           -- * Types
+        , BTCAmount
+        , BTCPrice
+        , Ask(..)
+        , Bid(..)
         , Ticker(..)
         , Depth(..)
         , Wallet(..)
         , DepositAddress(..)
         , OrderList(..)
+        , FillType(..)
+        , DarkPool(..)
         ) where
 
 import qualified Data.ByteString.Char8 as BC
@@ -86,34 +93,47 @@ sendBTC address quantity = queryEndPoint SendBTC
 
 -- | Places a Limit Order to Buy a Quantity of BTC at or Below a Given Price
 placeQuickBuy :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
-placeQuickBuy quantity price = queryEndPoint TradeEnter
-                                    [ ("TradeMode", "QuickBuy")
-                                    , ("Quantity",  BC.pack $ show quantity)
-                                    , ("Price",     BC.pack $ show price)
+placeQuickBuy = placeQuickOrder "QuickBuy"
+
+-- | Places a Limit Order to Sell a Quantity of BTC at or Above a Given Price
+placeQuickSell :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
+placeQuickSell = placeQuickOrder "QuickSell"
+
+-- | Places a Limit Order of the Supplied TradeMode
+placeQuickOrder :: BC.ByteString -> BTCAmount -> BTCPrice ->
+                   CampBX (Either String (APIStatus Int))
+placeQuickOrder tm quantity price = queryEndPoint TradeEnter
+                                    [ ("TradeMode", tm)
+                                    , ("Quantity", BC.pack $ show quantity)
+                                    , ("Price", BC.pack $ show price)
                                     ]
 
 -- | Places an Advanced Buy Order With an Optional FillType, Dark Pool and
 -- Expiration
 placeBuy :: BTCAmount -> BTCPrice -> Maybe FillType -> Maybe DarkPool ->
             Maybe String -> CampBX (Either String (APIStatus Int))
-placeBuy q p Nothing dp e  = placeBuy q p (Just Incremental) dp e
-placeBuy q p ft Nothing e  = placeBuy q p ft (Just No) e
-placeBuy q p ft dp Nothing = placeBuy q p ft dp (Just "")
-placeBuy q p (Just ft) (Just dp) (Just e) = queryEndPoint TradeAdvanced
-                                    [ ("TradeMode", "AdvancedBuy")
+placeBuy = placeOrder "AdvancedBuy"
+
+-- | Places an Advanced Sell Order With an Optional FillType, Dark Pool and
+-- Expiration
+placeSell :: BTCAmount -> BTCPrice -> Maybe FillType -> Maybe DarkPool ->
+             Maybe String -> CampBX (Either String (APIStatus Int))
+placeSell = placeOrder "AdvancedSell"
+
+-- | Places an Advanced Order with an Optional FillType, DarkPool and
+-- Expiration Date
+placeOrder :: BC.ByteString -> BTCAmount -> BTCPrice -> Maybe FillType ->
+              Maybe DarkPool -> Maybe String -> CampBX (Either String (APIStatus Int))
+placeOrder tm q p Nothing dp e  = placeOrder tm q p (Just Incremental) dp e
+placeOrder tm q p ft Nothing e  = placeOrder tm q p ft (Just No) e
+placeOrder tm q p ft dp Nothing = placeOrder tm q p ft dp (Just "")
+placeOrder tm q p (Just ft) (Just dp) (Just e) = queryEndPoint TradeAdvanced
+                                    [ ("TradeMode", tm)
                                     , ("Quantity",  BC.pack $ show q)
                                     , ("Price",     BC.pack $ show p)
                                     , ("FillType",  BC.pack $ show ft)
                                     , ("DarkPool",  BC.pack $ show dp)
                                     , ("Expiry",    BC.pack e)
-                                    ]
-
--- | Places a Limit Order to Sell a Quantity of BTC at or Above a Given Price
-placeQuickSell :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
-placeQuickSell quantity price = queryEndPoint TradeEnter
-                                    [ ("TradeMode", "QuickSell")
-                                    , ("Quantity", BC.pack $ show quantity)
-                                    , ("Price", BC.pack $ show price)
                                     ]
 
 -- | Cancels the Buy Order with the Given Order ID
