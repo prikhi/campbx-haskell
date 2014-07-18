@@ -64,11 +64,11 @@ executable campBX
 
 library
   -- Modules exported by the library.
-  exposed-modules:     CampBX
+  exposed-modules:     Web.CampBX
 
   -- Modules included in this library but not exported.
-  other-modules:       CampBX.Client,
-                       CampBX.Types
+  other-modules:       Web.CampBX.Client,
+                       Web.CampBX.Types
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:

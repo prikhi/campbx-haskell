@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-|
-Module          : CampBX
+Module          : Web.CampBX
 Description     : An API Library for the CampBX Bitcoin Market
 Copyright       : (c) Pavan Rikhi, 2014
 License         : GPL-3
@@ -23,7 +23,7 @@ The following actions are currently supported:
 * Canceling Orders
 
 -}
-module CampBX
+module Web.CampBX
         (
         -- * CampBX Monad
           CampBX
@@ -73,8 +73,8 @@ module CampBX
 
 import qualified Data.ByteString.Char8 as BC
 
-import CampBX.Client
-import CampBX.Types
+import Web.CampBX.Client
+import Web.CampBX.Types
 
 
 -- | Retrieves all the Buy & Sell Offers on the Market

@@ -3,7 +3,7 @@ module Main where
 
 import Control.Monad.IO.Class (liftIO)
 
-import CampBX
+import Web.CampBX
 
 main :: IO ()
 main = do

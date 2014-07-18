@@ -8,7 +8,7 @@
 - instances.
 -
 -}
-module CampBX.Types
+module Web.CampBX.Types
         ( EndPoint(..)
         , APIStatus(..)
         , BTCAddress

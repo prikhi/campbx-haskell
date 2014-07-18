@@ -6,7 +6,7 @@
 - POSTing data.
 -
 -}
-module CampBX.Client
+module Web.CampBX.Client
         ( CampBX
         , runCampBX
         , CampBXConfig(..)
@@ -24,7 +24,7 @@ import qualified Data.ByteString as B
 import Data.Time.Clock.POSIX
 import Network.HTTP.Conduit
 
-import CampBX.Types
+import Web.CampBX.Types
 
 -- | The CampBX Monad Holds the Configuration State and Allows Network and
 -- Logging Actions
