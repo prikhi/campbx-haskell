@@ -75,19 +75,21 @@ library
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.7 && <4.8,
                        http-conduit,
+                       bytestring,
+                       lifted-base,
+                       http-types,
                        aeson,
+                       vector,
                        lens,
                        containers,
-                       bytestring,
-                       transformers,
-                       resourcet,
                        unordered-containers,
                        mtl,
-                       time,
+                       transformers,
+                       resourcet,
                        monad-logger,
                        either,
                        text,
-                       vector
+                       time
 
 
   -- Directories containing source files.

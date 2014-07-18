@@ -16,17 +16,19 @@ module Web.CampBX.Client
 
 import Control.Applicative              ((<$>))
 import Control.Concurrent               (threadDelay)
+import Control.Exception.Lifted         (catch, throwIO)
 import Control.Monad                    (when)
 import Control.Monad.IO.Class           (MonadIO, liftIO)
 import Control.Monad.Logger             (runStderrLoggingT, LoggingT)
 import Control.Monad.State              (evalStateT, StateT, get, put)
 import Control.Monad.Trans.Class        (lift)
-import Control.Monad.Trans.Either       (runEitherT, EitherT, hoistEither)
+import Control.Monad.Trans.Either       (runEitherT, EitherT, hoistEither, left)
 import Control.Monad.Trans.Resource     (runResourceT, ResourceT)
 import Data.Aeson                       (eitherDecode, FromJSON)
 import qualified Data.ByteString as B
 import Data.Time.Clock.POSIX            (getPOSIXTime)
 import Network.HTTP.Conduit
+import Network.HTTP.Types               (statusCode)
 
 import Web.CampBX.Types
 
@@ -80,7 +82,14 @@ queryEndPoint ep postData = do
                                       , ("pass", bxPass config)
                                       ] ++ postData)
                                      initReq
-        response <- httpLbs authReq $ bxManager config
+        response <- catch (httpLbs authReq $ bxManager config)
+            (\e -> case e :: HttpException of
+                StatusCodeException status _ _ ->
+                    let url = makeURL (bxUrl config) ep in
+                    lift . lift . lift . left $
+                        "Received Invalid Response from " ++ url ++ " with " ++
+                        "Status Code: " ++ show (statusCode status)
+                _                              -> throwIO e)
         respTime <- getMilliseconds
         put config { lastReq  = respTime }
         lift . lift . lift . hoistEither . eitherDecode . responseBody $ response
