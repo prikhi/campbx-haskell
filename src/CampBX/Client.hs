@@ -1,4 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-|
+-
+- This Module contains functions related to interacting with the CampBX
+- server, such as creating a default configuration, querying urls and
+- POSTing data.
+-
+-}
 module CampBX.Client
         ( CampBX
         , runCampBX
@@ -23,7 +30,7 @@ import CampBX.Types
 -- Logging Actions
 type CampBX a = LoggingT (StateT CampBXConfig (ResourceT IO)) a
 
--- | Run the CampBX Action
+-- | Run a CampBX Action
 runCampBX :: MonadIO m => CampBXConfig -> CampBX a -> m a
 runCampBX config action = liftIO . runResourceT . fmap fst .
                           flip runStateT config . runStderrLoggingT $ action
@@ -37,11 +44,13 @@ data CampBXConfig = CampBXConfig { -- | The User to Login As
                                  , bxUrl     :: String
                                    -- | The Connection Manager for All Requests
                                  , bxManager :: Manager
-                                   -- | The POSIX Time of the Last Request in Milliseconds
+                                   -- | The POSIX Time of the Last Request
+                                   -- in Milliseconds. CampBX Allows 1 Request
+                                   -- Every 500 Milliseconds.
                                  , lastReq   :: Int
                                  }
 
--- | Creates a CampBXConfig with a new Manager
+-- | Creates a 'CampBXConfig' with a new Manager
 defaultCampBXConfig :: MonadIO m => m CampBXConfig
 defaultCampBXConfig = do
         man <- liftIO $ newManager conduitManagerSettings
@@ -59,13 +68,12 @@ queryEndPoint :: (FromJSON a) => EndPoint -> [(B.ByteString, B.ByteString)] ->
 queryEndPoint ep postData = do
         config   <- get
         reqTime  <- getMilliseconds
-        let timeDiff time =  abs $ time - lastReq config
-        when (timeDiff reqTime < 500) (liftIO . threadDelay . timeDiff $ reqTime)
-
+        let timeDiff =  abs $ reqTime - lastReq config
+        when (timeDiff < 500) (liftIO . threadDelay $ timeDiff)
         initReq  <- liftIO $ parseUrl $ makeURL (bxUrl config) ep
-        let authReq = urlEncodedBody
-                            ([("user", bxUser config), ("pass", bxPass config)]
-                             ++ postData) initReq
+        let authReq = urlEncodedBody ([("user", bxUser config),
+                                       ("pass", bxPass config)] ++ postData)
+                                     initReq
         response <- httpLbs authReq $ bxManager config
         respTime <- getMilliseconds
         put config { lastReq  = respTime }

@@ -8,7 +8,7 @@ Maintainer      : pavan@sleepanarchy.com
 Stability       : experimental
 Portability     : POSIX
 
-CampBX is a library for interacting with the API for CampBX, a Bitcoing
+CampBX is a library for interacting with the API for CampBX, a Bitcoin
 Trading Market.
 
 Actions are run in the 'CampBX' Monad, which should be supplied with
@@ -17,16 +17,17 @@ Config fields to use the 'Authorized Endpoints'.
 
 The following actions are currently supported:
 
-* Querying the Market Depth, Ticker and Account Balances
+* Retrieving the Market Depth, Ticker, Pending Orders and Account Balances
 * Depositing & Withdrawing Funds from the CampBX Account
 * Placing Quick & Advanced Buy/Sell Orders
+* Canceling Orders
 
 -}
 module CampBX
         (
         -- * CampBX Monad
-          runCampBX
-        , CampBXConfig(..)
+          CampBX
+        , runCampBX
         , defaultCampBXConfig
         -- * CampBX API Functions
         -- ** Anonymous Endpoints
@@ -43,18 +44,31 @@ module CampBX
         , placeSell
         , cancelBuyOrder
         , cancelSellOrder
-          -- * Types
+          -- * CampBX Types
+          -- ** Currency & Offer Types
+        , USDAmount
         , BTCAmount
         , BTCPrice
+        , BTCAddress
         , Ask(..)
         , Bid(..)
+          -- ** Response Types
         , Ticker(..)
         , Depth(..)
         , Wallet(..)
         , DepositAddress(..)
+        , TransferResponse(..)
+          -- ** Order-related Types
         , OrderList(..)
+        , Order(..)
+        , OrderType(..)
+        , PriceType(..)
         , FillType(..)
+        , Margin(..)
         , DarkPool(..)
+          -- ** API-related Types
+        , CampBXConfig(..)
+        , APIStatus(..)
         ) where
 
 import qualified Data.ByteString.Char8 as BC
