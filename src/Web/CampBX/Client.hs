@@ -14,28 +14,30 @@ module Web.CampBX.Client
         , queryEndPoint
         ) where
 
-import Control.Applicative ((<$>))
-import Control.Concurrent (threadDelay)
-import Control.Monad
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Resource (runResourceT, ResourceT)
-import Control.Monad.State (evalStateT, StateT, get, put)
-import Control.Monad.Logger (runStderrLoggingT, LoggingT)
-import Data.Aeson (eitherDecode, FromJSON)
+import Control.Applicative              ((<$>))
+import Control.Concurrent               (threadDelay)
+import Control.Monad                    (when)
+import Control.Monad.IO.Class           (MonadIO, liftIO)
+import Control.Monad.Logger             (runStderrLoggingT, LoggingT)
+import Control.Monad.State              (evalStateT, StateT, get, put)
+import Control.Monad.Trans.Class        (lift)
+import Control.Monad.Trans.Either       (runEitherT, EitherT, hoistEither)
+import Control.Monad.Trans.Resource     (runResourceT, ResourceT)
+import Data.Aeson                       (eitherDecode, FromJSON)
 import qualified Data.ByteString as B
-import Data.Time.Clock.POSIX (getPOSIXTime)
+import Data.Time.Clock.POSIX            (getPOSIXTime)
 import Network.HTTP.Conduit
 
 import Web.CampBX.Types
 
 -- | The CampBX Monad Holds the Configuration State and Allows Network and
 -- Logging Actions
-type CampBX a           = LoggingT (StateT CampBXConfig (ResourceT IO)) a
+type CampBX a           = LoggingT (StateT CampBXConfig (ResourceT (EitherT String IO))) a
 
 -- | Run a CampBX Action
-runCampBX :: MonadIO m => CampBXConfig -> CampBX a -> m a
-runCampBX config action = liftIO . runResourceT . flip evalStateT config .
-                          runStderrLoggingT $ action
+runCampBX :: MonadIO m => CampBXConfig -> CampBX a -> m (Either String a)
+runCampBX config action = liftIO . runEitherT . runResourceT .
+                          flip evalStateT config .  runStderrLoggingT $ action
 
 -- | Represents the Current CampBX Configuration State
 data CampBXConfig       = CampBXConfig
@@ -67,20 +69,21 @@ defaultCampBXConfig     = do
 -- | Queries an API EndPoint, waiting at least 500 Milliseconds from the
 -- previous request
 queryEndPoint :: (FromJSON a) => EndPoint -> [(B.ByteString, B.ByteString)] ->
-                                 CampBX (Either String a)
+                                 CampBX a
 queryEndPoint ep postData = do
         config   <- get
         reqTime  <- getMilliseconds
         let timeDiff =  abs $ reqTime - lastReq config
         when (timeDiff < 500) (liftIO . threadDelay $ timeDiff)
         initReq  <- liftIO $ parseUrl $ makeURL (bxUrl config) ep
-        let authReq = urlEncodedBody ([("user", bxUser config),
-                                       ("pass", bxPass config)] ++ postData)
+        let authReq = urlEncodedBody ([ ("user", bxUser config)
+                                      , ("pass", bxPass config)
+                                      ] ++ postData)
                                      initReq
         response <- httpLbs authReq $ bxManager config
         respTime <- getMilliseconds
         put config { lastReq  = respTime }
-        return $ eitherDecode $ responseBody response
+        lift . lift . lift . hoistEither . eitherDecode . responseBody $ response
         where getMilliseconds = liftIO $ (round . (* 1000)) <$> getPOSIXTime
 
 -- | Builds the URL for the EndPoint

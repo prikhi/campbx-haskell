@@ -78,44 +78,44 @@ import Web.CampBX.Types
 
 
 -- | Retrieves all the Buy & Sell Offers on the Market
-getDepth :: CampBX (Either String Depth)
+getDepth :: CampBX Depth
 getDepth = queryEndPoint GetDepth []
 
 -- | Retrieves the Current Market Ticker
-getTicker :: CampBX (Either String Ticker)
+getTicker :: CampBX Ticker
 getTicker = queryEndPoint GetTicker []
 
 -- | Retrieves the User's Total, Liquid and Margin Account Funds
-getWallet :: CampBX (Either String Wallet)
+getWallet :: CampBX Wallet
 getWallet = queryEndPoint GetFunds []
 
 -- | Retrieves a Bitcoin Address for Depositing Funds into the CampBX
 -- Account
-getDepositAddress :: CampBX (Either String DepositAddress)
+getDepositAddress :: CampBX DepositAddress
 getDepositAddress = queryEndPoint GetBTCAddr []
 
 -- | Retrieves the Account's Open Orders
-getPendingOrders :: CampBX (Either String OrderList)
+getPendingOrders :: CampBX OrderList
 getPendingOrders = queryEndPoint GetOrders []
 
 -- | Sends Bitcoins from the CampBX Account to the Specified Address
-sendBTC :: BTCAddress -> BTCAmount -> CampBX (Either String Integer)
+sendBTC :: BTCAddress -> BTCAmount -> CampBX Integer
 sendBTC address quantity = queryEndPoint SendBTC
                                     [ ("BTCTo", BC.pack address)
                                     , ("BTCAmt", BC.pack $ show quantity)
                                     ]
 
 -- | Places a Limit Order to Buy a Quantity of BTC at or Below a Given Price
-placeQuickBuy :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
+placeQuickBuy :: BTCAmount -> BTCPrice -> CampBX (APIStatus Int)
 placeQuickBuy = placeQuickOrder "QuickBuy"
 
 -- | Places a Limit Order to Sell a Quantity of BTC at or Above a Given Price
-placeQuickSell :: BTCAmount -> BTCPrice -> CampBX (Either String (APIStatus Int))
+placeQuickSell :: BTCAmount -> BTCPrice -> CampBX (APIStatus Int)
 placeQuickSell = placeQuickOrder "QuickSell"
 
 -- | Places a Limit Order of the Supplied TradeMode
 placeQuickOrder :: BC.ByteString -> BTCAmount -> BTCPrice ->
-                   CampBX (Either String (APIStatus Int))
+                   CampBX (APIStatus Int)
 placeQuickOrder tm quantity price = queryEndPoint TradeEnter
                                     [ ("TradeMode", tm)
                                     , ("Quantity", BC.pack $ show quantity)
@@ -125,19 +125,19 @@ placeQuickOrder tm quantity price = queryEndPoint TradeEnter
 -- | Places an Advanced Buy Order With an Optional FillType, Dark Pool and
 -- Expiration
 placeBuy :: BTCAmount -> BTCPrice -> Maybe FillType -> Maybe DarkPool ->
-            Maybe String -> CampBX (Either String (APIStatus Int))
+            Maybe String -> CampBX (APIStatus Int)
 placeBuy = placeOrder "AdvancedBuy"
 
 -- | Places an Advanced Sell Order With an Optional FillType, Dark Pool and
 -- Expiration
 placeSell :: BTCAmount -> BTCPrice -> Maybe FillType -> Maybe DarkPool ->
-             Maybe String -> CampBX (Either String (APIStatus Int))
+             Maybe String -> CampBX (APIStatus Int)
 placeSell = placeOrder "AdvancedSell"
 
 -- | Places an Advanced Order with an Optional FillType, DarkPool and
 -- Expiration Date
 placeOrder :: BC.ByteString -> BTCAmount -> BTCPrice -> Maybe FillType ->
-              Maybe DarkPool -> Maybe String -> CampBX (Either String (APIStatus Int))
+              Maybe DarkPool -> Maybe String -> CampBX (APIStatus Int)
 placeOrder tm q p Nothing dp e  = placeOrder tm q p (Just Incremental) dp e
 placeOrder tm q p ft Nothing e  = placeOrder tm q p ft (Just No) e
 placeOrder tm q p ft dp Nothing = placeOrder tm q p ft dp (Just "")
@@ -151,13 +151,13 @@ placeOrder tm q p (Just ft) (Just dp) (Just e) = queryEndPoint TradeAdvanced
                                     ]
 
 -- | Cancels the Buy Order with the Given Order ID
-cancelBuyOrder :: Int -> CampBX (Either String (APIStatus Int))
+cancelBuyOrder :: Int -> CampBX (APIStatus Int)
 cancelBuyOrder orderID = queryEndPoint TradeCancel
                                     [ ("Type", "Buy")
                                     , ("OrderID", BC.pack $ show orderID) ]
 
 -- | Cancels the Sell Order with the Given Order ID
-cancelSellOrder :: Int -> CampBX (Either String (APIStatus Int))
+cancelSellOrder :: Int -> CampBX (APIStatus Int)
 cancelSellOrder orderID = queryEndPoint TradeCancel
                                     [ ("Type", "Sell")
                                     , ("OrderID", BC.pack $ show orderID) ]

@@ -1,14 +1,23 @@
 module Main where
 
+import Control.Applicative    ((<$>))
 import Control.Monad.IO.Class (liftIO)
 
 import Web.CampBX
 
+
 main :: IO ()
 main = do
         cfg <- defaultCampBXConfig
-        runCampBX cfg $ do
+        _   <- runCampBX cfg $ do
             d <- getDepth
             liftIO $ print d
-            t <- getTicker
-            liftIO $ print t
+            totalAskVolume <- calculateAskVolume <$> getDepth
+            liftIO . putStrLn $ "Total Ask Volume: " ++ show totalAskVolume
+            getTicker >>= liftIO . print
+        return ()
+
+
+calculateAskVolume :: Depth -> BTCAmount
+calculateAskVolume depthList = sum . map askPrice . asks $ depthList
+        where askPrice (Ask (_, q)) = q
