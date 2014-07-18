@@ -28,31 +28,32 @@ import Web.CampBX.Types
 
 -- | The CampBX Monad Holds the Configuration State and Allows Network and
 -- Logging Actions
-type CampBX a = LoggingT (StateT CampBXConfig (ResourceT IO)) a
+type CampBX a           = LoggingT (StateT CampBXConfig (ResourceT IO)) a
 
 -- | Run a CampBX Action
 runCampBX :: MonadIO m => CampBXConfig -> CampBX a -> m a
-runCampBX config action = liftIO . runResourceT . fmap fst .
-                          flip runStateT config . runStderrLoggingT $ action
+runCampBX config action = liftIO . runResourceT . flip evalStateT config .
+                          runStderrLoggingT $ action
 
 -- | Represents the Current CampBX Configuration State
-data CampBXConfig = CampBXConfig { -- | The User to Login As
-                                   bxUser    :: B.ByteString
-                                   -- | The User's Password
-                                 , bxPass    :: B.ByteString
-                                   -- | The Desired API URL
-                                 , bxUrl     :: String
-                                   -- | The Connection Manager for All Requests
-                                 , bxManager :: Manager
-                                   -- | The POSIX Time of the Last Request
-                                   -- in Milliseconds. CampBX Allows 1 Request
-                                   -- Every 500 Milliseconds.
-                                 , lastReq   :: Int
-                                 }
+data CampBXConfig       = CampBXConfig
+                            { -- | The User to Login As
+                              bxUser    :: B.ByteString
+                              -- | The User's Password
+                            , bxPass    :: B.ByteString
+                              -- | The Desired API URL
+                            , bxUrl     :: String
+                              -- | The Connection Manager for All Requests
+                            , bxManager :: Manager
+                              -- | The POSIX Time of the Last Request
+                              -- in Milliseconds. CampBX Allows 1 Request
+                              -- Every 500 Milliseconds.
+                            , lastReq   :: Int
+                            }
 
 -- | Creates a 'CampBXConfig' with a new Manager
 defaultCampBXConfig :: MonadIO m => m CampBXConfig
-defaultCampBXConfig = do
+defaultCampBXConfig     = do
         man <- liftIO $ newManager conduitManagerSettings
         return CampBXConfig { bxUser    = ""
                             , bxPass    = ""

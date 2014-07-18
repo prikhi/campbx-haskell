@@ -69,9 +69,9 @@ type USDAmount  = Double
 type BTCPrice   = USDAmount
 
 -- | An Offer to buy BTC in exchange for USD
-newtype Bid        = Bid (BTCPrice, BTCAmount) deriving (Show, Generic)
+newtype Bid     = Bid (BTCPrice, BTCAmount) deriving (Show, Generic)
 -- TODO: Using record syntax would be best, but have to figure out how to
--- write the parseJSON for Array -> record instead of Array -> tuple
+-- write the parseJSON for Array -> record instead of Array -> pair
 --data Bid        = Bid       { -- | The Maximum Price the Bidder is Willing to
 --                              -- Pay
 --                              bidPrice  :: BTCPrice
@@ -81,9 +81,10 @@ newtype Bid        = Bid (BTCPrice, BTCAmount) deriving (Show, Generic)
 --                            } deriving (Show, Generic)
 
 -- | An Offer to Sell BTC in Exchange for USD
-newtype Ask        = Ask (BTCPrice, BTCAmount) deriving (Show, Generic)
+newtype Ask     = Ask (BTCPrice, BTCAmount) deriving (Show, Generic)
 -- TODO: Using record syntax would be best, but have to figure out how to
--- write the parseJSON for Array -> record instead of Array -> tuple
+-- write the parseJSON for Array -> record instead of Array -> pair, which
+-- is derived automatically
 --data Ask        = Ask       { -- | The Minimum Price the Asker Wants
 --                              askPrice  :: BTCPrice
 --                              -- | The Amuount of BTC the Asker is
@@ -197,20 +198,17 @@ instance FromJSON (APIStatus Int)
 
 instance FromJSON Ticker where
         parseJSON (Object v) = do
-            bid   <- read <$> v .: "Best Bid"
-            ask   <- read <$> v .: "Best Ask"
-            trade <- read <$> v .: "Last Trade"
+            bid       <- read <$> v .: "Best Bid"
+            ask       <- read <$> v .: "Best Ask"
+            trade     <- read <$> v .: "Last Trade"
             return $ Ticker ask bid trade
         parseJSON _          = fail "Did not receive a valid Ticker JSON object."
 
 instance FromJSON Depth where
-        parseJSON (Object v) =
-            case HM.lookup "Asks" v  of
-               (Just as) -> case HM.lookup "Bids" v of
-                               (Just bs) -> Depth <$> parseJSON as
-                                                  <*> parseJSON bs
-                               _         -> fail "Could not parse Depth Bids"
-               _ -> fail "Could not parse Depth Asks"
+        parseJSON (Object v) = do
+            depthAsks <- v .: "Asks"
+            depthBids <- v .: "Bids"
+            return $ Depth depthAsks depthBids
         parseJSON _          = fail "Did not receive a valid Depth JSON object."
 
 instance FromJSON Wallet where
@@ -242,16 +240,16 @@ instance FromJSON OrderList where
             OrderList <$> buyList <*> sellList
             where buyList    = case HM.lookup "Buy" v of
                       Just (Array a) -> case HM.lookup "Info" arrayObj of
-                                     Just _  -> return []
-                                     Nothing -> parseJSON (Array a)
-                                     where Object arrayObj = head $ V.toList a
+                                            Just _  -> return []
+                                            Nothing -> parseJSON (Array a)
+                                            where Object arrayObj = head $ V.toList a
                       _              -> fail $ "Could not parse the Buy List in "
-                                        ++     "the Pending Orders JSON Object."
+                                            ++ "the Pending Orders JSON Object."
                   sellList   = case HM.lookup "Buy" v of
                       Just (Array a) -> case HM.lookup "Info" arrayObj of
-                                     Just _  -> return []
-                                     Nothing -> parseJSON (Array a)
-                                     where Object arrayObj = head $ V.toList a
+                                            Just _  -> return []
+                                            Nothing -> parseJSON (Array a)
+                                            where Object arrayObj = head $ V.toList a
                       _              -> fail $ "Could not parse the Sell List in "
-                                        ++     "the Pending Orders JSON Object."
+                                            ++ "the Pending Orders JSON Object."
         parseJSON _          = fail "Did not receive a proper Pending Orders JSON Object."
