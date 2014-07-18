@@ -15,13 +15,15 @@ module Web.CampBX.Client
         ) where
 
 import Control.Applicative ((<$>))
-import Control.Concurrent
+import Control.Concurrent (threadDelay)
+import Control.Monad
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Resource (runResourceT, ResourceT)
-import Control.Monad.State
-import Control.Monad.Logger
+import Control.Monad.State (evalStateT, StateT, get, put)
+import Control.Monad.Logger (runStderrLoggingT, LoggingT)
 import Data.Aeson (eitherDecode, FromJSON)
 import qualified Data.ByteString as B
-import Data.Time.Clock.POSIX
+import Data.Time.Clock.POSIX (getPOSIXTime)
 import Network.HTTP.Conduit
 
 import Web.CampBX.Types

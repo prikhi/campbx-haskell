@@ -35,7 +35,7 @@ import Control.Applicative ((<$>), (<*>))
 import Data.Aeson
 import qualified Data.Vector as V
 import qualified Data.HashMap.Strict as HM
-import GHC.Generics
+import GHC.Generics (Generic)
 
 
 -- | API EndPoints
