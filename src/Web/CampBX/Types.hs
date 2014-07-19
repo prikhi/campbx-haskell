@@ -69,28 +69,21 @@ type USDAmount  = Double
 type BTCPrice   = USDAmount
 
 -- | An Offer to buy BTC in exchange for USD
-newtype Bid     = Bid (BTCPrice, BTCAmount) deriving (Show, Generic)
--- TODO: Using record syntax would be best, but have to figure out how to
--- write the parseJSON for Array -> record instead of Array -> pair
---data Bid        = Bid       { -- | The Maximum Price the Bidder is Willing to
---                              -- Pay
---                              bidPrice  :: BTCPrice
---                              -- | The Amount of BTC the Bidder Wishes to
---                              -- Purchase
---                            , bidAmount :: BTCAmount
---                            } deriving (Show, Generic)
+data Bid        = Bid       { -- | The Maximum Price the Bidder is Willing to
+                              -- Pay
+                              bidPrice  :: BTCPrice
+                              -- | The Amount of BTC the Bidder Wishes to
+                              -- Purchase
+                            , bidAmount :: BTCAmount
+                            } deriving (Show)
 
 -- | An Offer to Sell BTC in Exchange for USD
-newtype Ask     = Ask (BTCPrice, BTCAmount) deriving (Show, Generic)
--- TODO: Using record syntax would be best, but have to figure out how to
--- write the parseJSON for Array -> record instead of Array -> pair, which
--- is derived automatically
---data Ask        = Ask       { -- | The Minimum Price the Asker Wants
---                              askPrice  :: BTCPrice
---                              -- | The Amuount of BTC the Asker is
---                              -- Willing to Sell
---                            , askAmount :: BTCAmount
---                            } deriving (Show, Generic)
+data Ask        = Ask       { -- | The Minimum Price the Asker Wants
+                              askPrice  :: BTCPrice
+                              -- | The Amuount of BTC the Asker is
+                              -- Willing to Sell
+                            , askAmount :: BTCAmount
+                            } deriving (Show)
 
 
 -- | An OrderType Describe's Whether the Order is an Ask or a Bid
@@ -185,8 +178,6 @@ data TransferResponse = TransferResponse { transaction :: Integer } deriving (Sh
 
 
 -- JSON Parsing Instances
-instance FromJSON Bid
-instance FromJSON Ask
 instance FromJSON OrderType
 instance FromJSON PriceType
 instance FromJSON FillType
@@ -195,6 +186,18 @@ instance FromJSON DarkPool
 instance FromJSON Order
 instance FromJSON (APIStatus String)
 instance FromJSON (APIStatus Int)
+
+instance FromJSON Bid where
+        parseJSON (Array a) = do
+            let [price, amount] = V.toList a
+            Bid <$> parseJSON price <*> parseJSON amount
+        parseJSON _         = fail "Unable to parse Bid JSON Object"
+
+instance FromJSON Ask where
+        parseJSON (Array a) = do
+            let [price, amount] = V.toList a
+            Ask <$> parseJSON price <*> parseJSON amount
+        parseJSON _         = fail "Unable to parse Ask JSON Object"
 
 instance FromJSON Ticker where
         parseJSON (Object v) = do

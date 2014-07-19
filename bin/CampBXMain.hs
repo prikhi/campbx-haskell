@@ -19,5 +19,4 @@ main = do
 
 
 calculateAskVolume :: Depth -> BTCAmount
-calculateAskVolume depthList = sum . map askPrice . asks $ depthList
-        where askPrice (Ask (_, q)) = q
+calculateAskVolume depthList = sum . map askAmount . asks $ depthList
